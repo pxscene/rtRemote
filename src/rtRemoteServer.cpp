@@ -443,6 +443,7 @@ rtRemoteServer::onClientStateChanged(std::shared_ptr<rtRemoteClient> const& clie
     }
   }
 
+  m_env->ObjectCache->removeUnused(true);
   return e;
 }
 
