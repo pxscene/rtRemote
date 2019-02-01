@@ -197,7 +197,7 @@ rtRemoteObjectCache::erase(std::string const& id)
 }
 
 rtError
-rtRemoteObjectCache::removeUnused(bool expireAll)
+rtRemoteObjectCache::removeUnused()
 {
   auto now = std::chrono::steady_clock::now();
 
@@ -215,7 +215,7 @@ rtRemoteObjectCache::removeUnused(bool expireAll)
     }
     #endif
 
-    if (!itr->second.Unevictable && (expireAll || !itr->second.isActive(now)))
+    if (!itr->second.Unevictable && !itr->second.isActive(now))
       itr = sRefMap.erase(itr);
     else
       ++itr;
