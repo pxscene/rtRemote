@@ -396,10 +396,14 @@ rtSendDocument(rapidjson::Document const& doc, int fd, sockaddr_storage const* d
     flags = MSG_NOSIGNAL;
     #endif
 
+    int limit = 100;
     while (sendmsg (fd, &msg, flags) < 0)
     {
-      if (errno == EINTR)
+      if ((errno == EINTR) && --limit)
+      {
+        rtLogWarn("sending message interrupted, repeating. %d attempts left", limit);
         continue;
+      }
       rtError e = rtErrorFromErrno(errno);
       rtLogError("failed to send message. %s", rtStrError(e));
       return e;
