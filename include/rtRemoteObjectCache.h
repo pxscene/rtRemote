@@ -20,11 +20,9 @@ limitations under the License.
 #define __RT_OBJECT_CACHE_H__
 
 #include <string>
-
 #include <assert.h>
-#include <rtError.h>
-#include <rtObject.h>
 #include <chrono>
+#include <rtRemote.h>
 
 class rtRemoteEnvironment;
 
@@ -44,7 +42,7 @@ public:
   rtError markUnevictable(std::string const& id, bool state);
   rtError removeUnused();
   rtError clear();
-
+  static rtError registerHighMarkCallback(rtRemoteObjectCacheHighMarkCallback cb, void* argp);
 private:
   rtRemoteEnvironment* m_env;
 };

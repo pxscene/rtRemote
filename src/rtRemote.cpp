@@ -279,3 +279,9 @@ rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow, bool wa
   }
   return e;
 }
+
+rtError
+rtRemoteRegisterObjectCacheHighMarkCallback(rtRemoteObjectCacheHighMarkCallback cb, void* argp)
+{
+  return rtRemoteObjectCache::registerHighMarkCallback(cb, argp);
+}

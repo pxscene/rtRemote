@@ -148,6 +148,14 @@ rtRemoteProcessSingleItem();
 rtError
 rtRemoteRunUntil(rtRemoteEnvironment* env, uint32_t millisecondsFromNow, bool wait);
 
+/*mrollins: added to help debug XRE-13675.  
+  If rtRemoteObjectCache hits HighMark, the callback is invoked.
+  This gives the owner an opportunity to enable extra logging to help deduce why its filling the cache too fast */
+typedef void (*rtRemoteObjectCacheHighMarkCallback)(void*);
+
+rtError
+rtRemoteRegisterObjectCacheHighMarkCallback(rtRemoteObjectCacheHighMarkCallback cb, void* argp);
+
 #endif
 
 #endif

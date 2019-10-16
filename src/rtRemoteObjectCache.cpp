@@ -49,6 +49,11 @@ namespace
   std::mutex    sMutex;
   refmap        sRefMap;
   size_t        sHighMark = 10000;
+  bool          sDebugHighMark = false;
+
+  rtRemoteObjectCacheHighMarkCallback 
+                sHighMarkCallback = nullptr;
+  void*         sHighMarkCallbackData = nullptr;
 }
 
 rtObjectRef
@@ -223,8 +228,25 @@ rtRemoteObjectCache::removeUnused()
 
   if (sRefMap.size() > sHighMark)
   {
+    if(!sDebugHighMark)
+    {
+      sDebugHighMark = true;
+      if(sHighMarkCallback)
+      {
+        (*sHighMarkCallback)(sHighMarkCallbackData);
+      }
+    }
+
     rtLogWarn("Cache reached high mark, current size=%zu", sRefMap.size());
   }
 
+  return RT_OK;
+}
+
+rtError
+rtRemoteObjectCache::registerHighMarkCallback(rtRemoteObjectCacheHighMarkCallback cb, void* argp)
+{
+  sHighMarkCallback = cb;
+  sHighMarkCallbackData = argp;
   return RT_OK;
 }
