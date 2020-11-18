@@ -37,7 +37,6 @@ limitations under the License.
 #endif
 
 #define kInvalidSocket (-1)
-#define kUnixSocketTemplateRoot "/tmp/rt_remote_soc"
 
 rtError rtParseAddress(sockaddr_storage& ss, char const* addr, uint16_t port, uint32_t* index);
 rtError rtParseAddress(sockaddr_storage& ss, char const* s);
