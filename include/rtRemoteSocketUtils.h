@@ -28,6 +28,7 @@ limitations under the License.
 #include <string>
 #include <vector>
 
+#include "rtRemoteEnvironment.h"
 #include "rtRemoteSocketBuffer.h"
 #include "rtRemoteMessage.h"
 
@@ -56,6 +57,6 @@ rtError rtGetPeerName(int fd, sockaddr_storage& endpoint);
 rtError rtGetSockName(int fd, sockaddr_storage& endpoint);
 rtError	rtCloseSocket(int& fd);
 rtError rtGetDefaultInterface(sockaddr_storage& addr, uint16_t port);
-rtError rtCreateUnixSocketName(pid_t pid, char* buff, int n);
+rtError rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n);
 
 #endif

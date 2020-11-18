@@ -44,6 +44,7 @@ limitations under the License.
 #include <fcntl.h>
 #include <rtLog.h>
 #include <dirent.h>
+#include <libgen.h>
 
 namespace
 {
@@ -79,7 +80,7 @@ namespace
   } // parsePid
 
   void
-  cleanupStaleUnixSockets()
+  cleanupStaleUnixSockets(rtRemoteEnvironment* env)
   {
     DIR* d = opendir("/proc/");
     if (!d)
@@ -110,11 +111,15 @@ namespace
     while ((result != nullptr) && ret == 0);
     closedir(d);
 
-    d = opendir("/tmp");
+
+    std::string socketTemplate = env->Config->server_unix_socket_template();
+    std::string socketDir = dirname(strdup(socketTemplate.c_str()));
+
+    d = opendir(socketDir.c_str());
     if (!d)
     {
       rtError e = rtErrorFromErrno(errno);
-      rtLogWarn("failed to open directory /tmp. %s", rtStrError(e));
+      rtLogWarn("failed to open directory %s. %s", socketDir.c_str(), rtStrError(e));
       return;
     }
 
@@ -125,9 +130,9 @@ namespace
       if (ret == 0 && (result != nullptr))
       {
         memset(path, 0, sizeof(path));
-        strcpy(path, "/tmp/");
+        strcpy(path, socketDir.c_str());
         strcat(path, result->d_name);
-        if (strncmp(path, kUnixSocketTemplateRoot, strlen(kUnixSocketTemplateRoot)) == 0)
+        if (strncmp(path, socketTemplate.c_str(), strlen(socketTemplate.c_str())) == 0)
         {
           int pid = parsePid(result->d_name);
           if (active_pids.find(pid) == active_pids.end())
@@ -640,11 +645,11 @@ rtRemoteServer::openRpcListener()
   char path[UNIX_PATH_MAX];
 
   memset(path, 0, sizeof(path));
-  cleanupStaleUnixSockets();
+  cleanupStaleUnixSockets(m_env);
 
   if (isUnixDomain(m_env))
   {
-    rtError e = rtCreateUnixSocketName(0, path, sizeof(path));
+    rtError e = rtCreateUnixSocketName(m_env, 0, path, sizeof(path));
     if (e != RT_OK)
       return e;
 

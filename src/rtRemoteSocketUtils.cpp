@@ -556,7 +556,7 @@ rtGetDefaultInterface(sockaddr_storage& addr, uint16_t port)
 }
 
 rtError
-rtCreateUnixSocketName(pid_t pid, char* buff, int n)
+rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n)
 {
   if (!buff)
     return RT_ERROR_INVALID_ARG;
@@ -564,7 +564,9 @@ rtCreateUnixSocketName(pid_t pid, char* buff, int n)
   if (pid == 0)
     pid = getpid();
 
-  int count = snprintf(buff, n, "%s.%d", kUnixSocketTemplateRoot, pid);
+  std::string socketPath = env->Config->server_unix_socket_template();
+
+  int count = snprintf(buff, n, "%s.%d", socketPath.c_str(), pid);
   if (count >= n)
   {
     rtLogError("truncated socket path %d <= %d", n, count);

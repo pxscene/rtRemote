@@ -16,6 +16,10 @@
     "default_value":"unix",
     "type":"string" },
 
+{ "name":"rt.rpc.server.unix_socket_template",
+    "default_value":"/tmp/rt_remote_soc",
+    "type":"string" },
+
 { "name":"rt.rpc.server.use_dispatch_thread",
     "default_value":"false",
     "type":"bool" },
@@ -29,10 +33,6 @@
     "default_value":"lo",
     "type":"string",
     "platform":"linux" },
-
-{ "name":"rt.rpc.server.socket_family",
-    "default_value":"inet",
-    "type":"string" },
 
 { "name":"rt.rpc.resolver.multicast.interface",
     "default_value":"en0",

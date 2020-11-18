@@ -22,6 +22,7 @@ limitations under the License.
 #include "rtRemoteCallback.h"
 #include "rtRemoteCorrelationKey.h"
 #include "rtRemoteMessageHandler.h"
+#include "rtRemoteConfig.h"
 
 #include <condition_variable>
 #include <map>
@@ -30,7 +31,6 @@ limitations under the License.
 #include <thread>
 
 class rtRemoteServer;
-class rtRemoteConfig;
 class rtRemoteStreamSelector;
 class rtRemoteObjectCache;
 
