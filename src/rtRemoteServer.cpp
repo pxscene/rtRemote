@@ -131,6 +131,7 @@ namespace
       {
         memset(path, 0, sizeof(path));
         strcpy(path, socketDir.c_str());
+        strcat(path, "/");
         strcat(path, result->d_name);
         if (strncmp(path, socketTemplate.c_str(), strlen(socketTemplate.c_str())) == 0)
         {
