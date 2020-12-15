@@ -29,6 +29,7 @@ limitations under the License.
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <rtLog.h>
 
@@ -565,8 +566,17 @@ rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n)
     pid = getpid();
 
   std::string socketPath = env->Config->server_unix_socket_template();
+  char hostname[HOST_NAME_MAX];
 
-  int count = snprintf(buff, n, "%s.%d", socketPath.c_str(), pid);
+  // Add hostname so we only clean up our own sockets (for container support)
+  if (gethostname(hostname, HOST_NAME_MAX) != 0)
+  {
+    rtError e = rtErrorFromErrno(errno);
+    rtLogWarn("Failed to get hostname with error %s", rtStrError(e));
+    return e;
+  }
+
+  int count = snprintf(buff, n, "%s.%s.%d", socketPath.c_str(), hostname, pid);
   if (count >= n)
   {
     rtLogError("truncated socket path %d <= %d", n, count);
