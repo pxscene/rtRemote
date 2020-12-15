@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 */
+#ifndef RTREMOTE_MULTICAST_RESOLVER_H
+#define RTREMOTE_MULTICAST_RESOLVER_H
 
 #include "rtRemoteIResolver.h"
 #include <condition_variable>
@@ -90,3 +92,5 @@ private:
   int		            m_shutdown_pipe[2];
   rtRemoteEnvironment* m_env;
 };
+
+#endif

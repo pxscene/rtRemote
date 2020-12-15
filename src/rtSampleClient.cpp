@@ -122,6 +122,8 @@ int main(int /*argc*/, char* /*argv*/ [])
     rtRemoteRunUntil(env, 100, true);
     //sleep(1);
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(400));
+
     rtValue temp(n);
     obj->Set("prop", &temp);
     n++;

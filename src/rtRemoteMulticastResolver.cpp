@@ -404,7 +404,18 @@ rtRemoteMulticastResolver::onSearch(rtRemoteMessagePtr const& doc, sockaddr_stor
     doc.SetObject();
     doc.AddMember(kFieldNameMessageType, kMessageTypeLocate, doc.GetAllocator());
     doc.AddMember(kFieldNameObjectId, std::string(objectId), doc.GetAllocator());
-    doc.AddMember(kFieldNameEndPoint, m_rpc_endpoint->toString(), doc.GetAllocator());
+
+    {
+      std::unique_ptr<rtRemoteEndPoint> tempEndpoint;
+      if (itr->second.ss_family == AF_UNIX)
+        tempEndpoint.reset(rtRemoteFileEndPoint::fromSockAddr(itr->second));
+      else
+        tempEndpoint.reset(rtRemoteIPEndPoint::fromSockAddr("tcp", itr->second));
+      doc.AddMember(kFieldNameEndPoint, tempEndpoint->toString(), doc.GetAllocator());
+    }
+
+//    doc.AddMember(kFieldNameEndPoint, m_rpc_endpoint->toString(), doc.GetAllocator());
+
     doc.AddMember(kFieldNameSenderId, senderId->value.GetInt(), doc.GetAllocator());
     doc.AddMember(kFieldNameCorrelationKey, key.toString(), doc.GetAllocator());
 
@@ -594,7 +605,6 @@ rtRemoteMulticastResolver::registerObject(std::string const& name, sockaddr_stor
 {
   std::unique_lock<std::mutex> lock(m_mutex);
   m_hosted_objects[name] = endpoint;
-  lock.unlock(); // TODO this wasn't here before.  Make sure it's right to put it here
   return RT_OK;
 }
 

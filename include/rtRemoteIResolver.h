@@ -26,6 +26,7 @@ limitations under the License.
 #include <stdint.h>
 
 #include "rtRemoteTypes.h"
+#include <rtRemoteEndPoint.h>
 
 class rtRemoteIResolver
 {
@@ -33,8 +34,12 @@ public:
   virtual ~rtRemoteIResolver() { }
   virtual rtError open(sockaddr_storage const& rpc_endpoint) = 0;
   virtual rtError close() = 0;
+
+  // TODO: these two methods should be updated at some point to replace sockaddr_storage
+  // with rtRemoteEndPoint
   virtual rtError registerObject(std::string const& name, sockaddr_storage const& endpoint) = 0;
   virtual rtError locateObject(std::string const& name, sockaddr_storage& endpoint, uint32_t timeout) = 0;
+
   virtual rtError unregisterObject(std::string const& name) = 0;
 };
 

@@ -49,6 +49,7 @@ limitations under the License.
 #define kFieldNameScheme "scheme"
 #define kFieldNameEndpointType "endpoint.type"
 #define kFieldNameReplyTo "reply-to"
+#define kFieldNameTimeout "timeout"
 #define kEndpointTypeLocal "local.endpoint"
 #define kEndpointTypeRemote "net.endpoint"
 #define kNullObjectId "nil"

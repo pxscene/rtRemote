@@ -275,27 +275,64 @@ rtPushFd(fd_set* fds, int fd, int* maxFd)
 }
 
 rtError
-rtReadUntil(int fd, char* buff, int n)
+rtReadUntil(int fd, char* buff, int n, int millis)
 {
   ssize_t bytesRead = 0;
   ssize_t bytesToRead = n;
 
+  int maxFd = 0;
+
+  fd_set readFds;
+  fd_set errFds;
+
+  FD_ZERO(&readFds);
+  rtPushFd(&readFds, fd, &maxFd);
+
+  FD_ZERO(&errFds);
+  rtPushFd(&errFds, fd, &maxFd);
+
+  timeval tv;
+  timeval* timeout = nullptr;
+
+  if (millis == -1)
+    timeout = nullptr;
+  else
+  {
+    tv.tv_sec = (millis / 1000);
+    tv.tv_usec = (millis - ((millis / 1000) * 1000)) * 1000;
+    timeout = &tv;
+  }
+
   while (bytesRead < bytesToRead)
   {
-    ssize_t n = read(fd, buff + bytesRead, (bytesToRead - bytesRead));
-    if (n == 0)
-      return rtErrorFromErrno(ENOTCONN);
-
-    if (n == -1)
+    int ret = select(maxFd + 1, &readFds, nullptr, &errFds, timeout);
+    if (ret == -1)
     {
-      if (errno == EINTR)
-        continue;
-      rtError e = rtErrorFromErrno(errno);
-      rtLogError("failed to read from fd %d. %s", fd, rtStrError(e));
-      return e;
+      rtError err = rtErrorFromErrno(errno);
+      rtLogInfo("select failed. %s", rtStrError(err));
+      return err;
     }
+    else if (ret == 0)
+    {
+      return RT_ERROR_TIMEOUT;
+    }
+    else if (ret > 0)
+    {
+      ssize_t n = read(fd, buff + bytesRead, (bytesToRead - bytesRead));
+      if (n == 0)
+        return rtErrorFromErrno(ENOTCONN);
 
-    bytesRead += n;
+      if (n == -1)
+      {
+        if (errno == EINTR)
+          continue;
+        rtError e = rtErrorFromErrno(errno);
+        rtLogError("failed to read from fd %d. %s", fd, rtStrError(e));
+        return e;
+      }
+
+      bytesRead += n;
+    }
   }
   return RT_OK;
 }
@@ -324,10 +361,13 @@ rtSocketToString(sockaddr_storage const& ss)
 
   std::stringstream buff;
   buff << (ss.ss_family == AF_UNIX ? "unix" : "inet");
-  buff << ':';
+  buff << "://";
   buff << addrBuff;
-  buff << ':';
-  buff << port;
+  if (ss.ss_family != AF_UNIX)
+  {
+    buff << ':';
+    buff << port;
+  }
   return buff.str();
 }
 
@@ -417,7 +457,7 @@ rtReadMessage(int fd, rtRemoteSocketBuffer& buff, rtRemoteMessagePtr& doc)
   int n = 0;
   int capacity = static_cast<int>(buff.capacity());
 
-  err = rtReadUntil(fd, reinterpret_cast<char *>(&n), 4);
+  err = rtReadUntil(fd, reinterpret_cast<char *>(&n), 4, -1);
   if (err != RT_OK)
     return err;
 
@@ -434,7 +474,7 @@ rtReadMessage(int fd, rtRemoteSocketBuffer& buff, rtRemoteMessagePtr& doc)
   buff.resize(n + 1);
   buff[n] = '\0';
 
-  err = rtReadUntil(fd, &buff[0], n);
+  err = rtReadUntil(fd, &buff[0], n, -1);
   if (err != RT_OK)
   {
     rtLogError("failed to read payload message of length %d from socket", n);

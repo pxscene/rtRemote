@@ -520,11 +520,11 @@ rtRemoteServer::findObject(std::string const& objectId, rtObjectRef& obj, uint32
     sockaddr_storage objectEndpoint;
     err = m_resolver->locateObject(objectId, objectEndpoint, timeout);
 
-    rtLogDebug("object %s found at endpoint: %s", objectId.c_str(),
-    rtSocketToString(objectEndpoint).c_str());
-
     if (err == RT_OK)
     {
+      rtLogDebug("object %s found at endpoint: %s", objectId.c_str(),
+      rtSocketToString(objectEndpoint).c_str());
+
       std::shared_ptr<rtRemoteClient> client;
       std::string const endpointName = rtSocketToString(objectEndpoint);
 
@@ -587,6 +587,11 @@ rtRemoteServer::findObject(std::string const& objectId, rtObjectRef& obj, uint32
                 ditr->second.push_back(CB);
         }
       }
+    }
+    else
+    {
+      rtLogDebug("failed to find object %s. %s", objectId.c_str(),
+        rtStrError(err));
     }
   }
 

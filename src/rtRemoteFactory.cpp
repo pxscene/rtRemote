@@ -20,6 +20,7 @@ limitations under the License.
 #include "rtRemoteConfig.h"
 #include "rtRemoteIResolver.h"
 #include "rtRemoteMulticastResolver.h"
+#include "rtRemoteUnicastResolver.h"
 #include "rtRemoteTypes.h"
 #include "rtRemoteEnvironment.h"
 
@@ -62,6 +63,9 @@ rtRemoteFactory::rtRemoteCreateResolver(rtRemoteEnvironment* env)
   {
     case RT_RESOLVER_MULTICAST:
       resolver = new rtRemoteMulticastResolver(env);
+      break;
+    case RT_RESOLVER_UNICAST:
+      resolver = new rtRemoteUnicastResolver(env);
       break;
     default:
       assert(false);
