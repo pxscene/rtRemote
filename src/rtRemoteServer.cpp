@@ -79,6 +79,16 @@ namespace
     return pid;
   } // parsePid
 
+  bool isOurHostname(char const* hostname, char const* s)
+  {
+    std::string socketName = s;
+    std::size_t first = socketName.find_first_of(".") + 1;
+    std::size_t last = socketName.find_last_of(".");
+
+    std::string h = socketName.substr(first, last - first);
+    return !strcmp(h.c_str(), hostname);
+  } // isOurHostname
+
   void
   cleanupStaleUnixSockets(rtRemoteEnvironment* env)
   {
@@ -115,6 +125,14 @@ namespace
     std::string socketTemplate = env->Config->server_unix_socket_template();
     std::string socketDir = dirname(strdup(socketTemplate.c_str()));
 
+    char hostname[HOST_NAME_MAX];
+    if (gethostname(hostname, HOST_NAME_MAX) != 0)
+    {
+      rtError e = rtErrorFromErrno(errno);
+      rtLogWarn("Failed to get hostname with error %s", rtStrError(e));
+      return;
+    }
+
     d = opendir(socketDir.c_str());
     if (!d)
     {
@@ -135,6 +153,12 @@ namespace
         strcat(path, result->d_name);
         if (strncmp(path, socketTemplate.c_str(), strlen(socketTemplate.c_str())) == 0)
         {
+          if (!isOurHostname(hostname, result->d_name))
+          {
+            // ignore this socket
+            continue;
+          }
+
           int pid = parsePid(result->d_name);
           if (active_pids.find(pid) == active_pids.end())
           {
@@ -235,7 +259,7 @@ rtRemoteServer::rtRemoteServer(rtRemoteEnvironment* env)
   m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeMethodCallRequest,
     rtRemoteCallback<rtRemoteMessageHandler>(&rtRemoteServer::onMethodCall_Dispatch, this)));
 
-  m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveRequest,
+  m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveRequest, 
     rtRemoteCallback<rtRemoteMessageHandler>(&rtRemoteServer::onKeepAlive_Dispatch, this)));
 
   m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveResponse,
