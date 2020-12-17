@@ -25,6 +25,7 @@ set(RTREMOTE_SOURCE_FILES rtremote.conf.gen rtRemoteConfig.h src/rtRemoteServer.
 add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRT_PLATFORM_LINUX -DRT_REMOTE_LOOPBACK_ONLY)
 include_directories(AFTER ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/external ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR} ${RT_INCLUDE_DIR} )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 set(LIBRARY_LINKER_OPTIONS -pthread -ldl -luuid -Wl,-rpath=../../,--enable-new-dtags)
 set(RTREMOTE_LINK_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${RT_LIBRARY_DIR} )
 
@@ -115,6 +116,6 @@ endif (BUILD_RTREMOTE_SAMPLE_APP_SIMPLE)
 if (BUILD_RESOLVER)
   add_executable(rtresolvd src/rtresolvd.cpp)
   add_dependencies(rtresolvd rtremote_shared)
-  target_link_libraries(rtresolvd rtRemote rtCore)
+  target_link_libraries(rtresolvd ${LIBRARY_LINKER_OPTIONS} rtremote_shared rtCore)
   link_directories(${RTREMOTE_LINK_DIRECTORIES})
 endif ()
