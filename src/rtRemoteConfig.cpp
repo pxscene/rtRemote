@@ -234,6 +234,9 @@ rtRemoteConfigBuilder::fromFile(char const* file)
     if (p[n-1] == '\n')
       p[n-1] = '\0';
 
+    if (strlen(p) == 0)
+      continue;
+
     char const* begin = p;
     char const* end = p + 1;
 
