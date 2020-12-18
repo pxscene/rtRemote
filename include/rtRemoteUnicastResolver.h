@@ -45,6 +45,8 @@ public:
 private:
   void readIncomingMessages();
   rtError connectToResolverServer();
+  rtError reconnect();
+  rtError reregisterObjects();
 
   rtError sendRequest(rapidjson::Document const& req, rtRemoteMessagePtr& res, uint32_t timeout);
 
@@ -63,6 +65,7 @@ private:
   std::mutex                m_mutex;
   std::condition_variable   m_cond;
   std::thread*              m_message_reader;
+  std::thread*              m_reconnection;
   int                       m_daemon_connection;
   sockaddr_storage          m_daemon_endpoint;
   sockaddr_storage          m_rpc_endpoint;

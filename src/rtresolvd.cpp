@@ -22,11 +22,13 @@ limitations under the License.
 #include "rtRemoteConfigBuilder.h"
 #include "rtRemoteMulticastResolver.h"
 #include "rtRemoteSocketUtils.h"
+#include "rtRemoteServer.h"
 
 #include <algorithm>
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 
 #include <rapidjson/memorystream.h>
 #include <rapidjson/stringbuffer.h>
@@ -188,10 +190,16 @@ public:
       }
 
       m_connected_clients.erase(std::remove_if(m_connected_clients.begin(), m_connected_clients.end(),
-        [](rtRemoteConnectedClient& client)
+        [this](rtRemoteConnectedClient& client)
         {
           if (client.status != RT_OK)
+          {
+            // Unregister objects from that client so we don't send out stale
+            // locate messages
+            autoUnregister(rtSocketToString(client.remote_endpoint));
             ::close(client.fd);
+          }
+
           return client.status != RT_OK;
         }), std::end(m_connected_clients));
 
@@ -260,6 +268,8 @@ public:
 
     rtError err = m_multicast_resolver->unregisterObject(object_name);
 
+    m_registered_objects.erase(rtSocketToString(from_client.remote_endpoint));
+
     res.reset(new rapidjson::Document());
     res->SetObject();
     res->AddMember(kFieldNameMessageType, kNsMessageTypeRegisterResponse, res->GetAllocator());
@@ -278,6 +288,8 @@ public:
 
     rtError err = m_multicast_resolver->registerObject(object_name, endpoint);
 
+    m_registered_objects[rtSocketToString(from_client.remote_endpoint)].push_back(object_name);
+
     res.reset(new rapidjson::Document());
     res->SetObject();
     res->AddMember(kFieldNameMessageType, kNsMessageTypeRegisterResponse, res->GetAllocator());
@@ -290,7 +302,6 @@ public:
 
   rtError doLookup(rtRemoteConnectedClient const& from_client, rtRemoteMessagePtr const& req, rtRemoteMessagePtr& res)
   {
-
     std::string const objectName = (*req)[kFieldNameObjectId].GetString();
 
     uint32_t timeout = 5000;
@@ -319,6 +330,28 @@ public:
     }
 
     return err;
+  }
+
+  rtError autoUnregister(std::string soc)
+  {
+    auto itr = m_registered_objects.find(soc);
+    if (itr == m_registered_objects.end())
+    {
+      // nothing to do
+      return RT_OK;
+    }
+    rtError err;
+    for (auto &&obj : itr->second)
+    {
+      rtLogDebug("Unregistering object %s for client %s", obj.c_str(), soc.c_str());
+      err = m_multicast_resolver->unregisterObject(obj);
+      if (err != RT_OK)
+      {
+        rtLogWarn("Failed to unregister object %s", obj.c_str());
+      }
+    }
+
+    return RT_OK;
   }
 
   rtError open()
@@ -408,13 +441,14 @@ public:
   }
 
 private:
-  int                                   m_listen_fd;
-  sockaddr_storage                      m_listen_endpoint;
-  std::vector<rtRemoteConnectedClient>  m_connected_clients;
-  rtRemoteMulticastResolver*            m_multicast_resolver;
-  rtRemoteEnvironment*                  m_env;
-  std::map<std::string, RequestHandler> m_request_handlers;
-  pid_t                                 m_pid;
+  int                                                   m_listen_fd;
+  sockaddr_storage                                      m_listen_endpoint;
+  std::vector<rtRemoteConnectedClient>                  m_connected_clients;
+  rtRemoteMulticastResolver*                            m_multicast_resolver;
+  rtRemoteEnvironment*                                  m_env;
+  std::map<std::string, RequestHandler>                 m_request_handlers;
+  pid_t                                                 m_pid;
+  std::unordered_map<std::string, std::vector<std::string>>  m_registered_objects;
 
   // TODO: probably not needed
   sockaddr_storage                      m_rpc_endpoint;

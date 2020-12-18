@@ -23,6 +23,7 @@ limitations under the License.
 #include "rtRemoteSocketBuffer.h"
 #include "rtRemoteSocketUtils.h"
 #include "rtRemoteUnicastResolver.h"
+#include "rtRemoteObjectCache.h"
 
 #include <chrono>
 
@@ -63,6 +64,25 @@ rtRemoteUnicastResolver::rtRemoteUnicastResolver(rtRemoteEnvironment* env)
 rtRemoteUnicastResolver::~rtRemoteUnicastResolver()
 {
   this->close();
+}
+
+rtError
+rtRemoteUnicastResolver::reregisterObjects()
+{
+  // Look through our cache and re-register all locally known objects
+  std::vector<std::string> objIds = m_env->ObjectCache->getAllIds();
+  rtError err;
+
+  for (auto &&obj : objIds)
+  {
+    err = registerObject(obj, m_rpc_endpoint);
+    if (err != RT_OK)
+    {
+      rtLogWarn("Failed to re-register object %s with error %s", obj.c_str(), rtStrError(err));
+    }
+  }
+
+  return RT_OK;
 }
 
 rtError
@@ -147,10 +167,12 @@ rtRemoteUnicastResolver::readIncomingMessages()
     {
       if (err == rtErrorFromErrno(ENOTCONN))
       {
-        rtLogInfo("daemon connection broken, need to re-connect");
-        err = connectToResolverServer();
+        reconnect();
       }
-      rtLogWarn("failed to read incoming message. %s", rtStrError(err));
+      else
+      {
+        rtLogWarn("failed to read incoming message. %s", rtStrError(err));
+      }
     }
   }
 }
@@ -307,4 +329,36 @@ rtRemoteUnicastResolver::registerObject(std::string const& name, sockaddr_storag
     err = RT_ERROR_PROTOCOL_ERROR;
 
   return err;
+}
+
+rtError
+rtRemoteUnicastResolver::reconnect()
+{
+  rtLogError("daemon connection broken, attempting to re-connect");
+  useconds_t delay = 500000;            // 0.5s
+  const useconds_t maxDelay = 60000000; // 60s
+  int attempt = 0;
+
+  rtError reconnectionErr;
+
+  while ((reconnectionErr = connectToResolverServer()) != RT_OK)
+  {
+    attempt++;
+    rtLogWarn("Connection to daemon failed - attempt %d", attempt);
+    usleep(delay);
+    if (delay < maxDelay)
+    {
+      delay *= 2;
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  if (reconnectionErr == RT_OK)
+  {
+    rtLogInfo("Reconnected!");
+    m_reconnection = new std::thread(&rtRemoteUnicastResolver::reregisterObjects, this);
+  }
 }

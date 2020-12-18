@@ -22,6 +22,7 @@ limitations under the License.
 #include <string>
 #include <assert.h>
 #include <chrono>
+#include <vector>
 #include <rtRemote.h>
 
 class rtRemoteEnvironment;
@@ -33,6 +34,7 @@ public:
     : m_env(env)
   { }
 
+  std::vector<std::string> getAllIds();
   rtObjectRef findObject(std::string const& id);
   rtFunctionRef findFunction(std::string const& id);
   rtError insert(std::string const& id, rtObjectRef const& ref);

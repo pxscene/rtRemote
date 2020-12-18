@@ -59,6 +59,7 @@ rtRemoteFactory::rtRemoteCreateResolver(rtRemoteEnvironment* env)
 {
   rtRemoteIResolver* resolver = nullptr;
   rtResolverType t = rtResolverTypeFromString(env->Config->resolver_type());
+  rtLogDebug("Using resolver type %s", env->Config->resolver_type().c_str());
   switch (t)
   {
     case RT_RESOLVER_MULTICAST:

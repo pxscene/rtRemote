@@ -75,6 +75,17 @@ rtRemoteObjectCache::findFunction(std::string const& id)
   return (itr != sRefMap.end()) ? itr->second.Function : rtFunctionRef();
 }
 
+std::vector<std::string>
+rtRemoteObjectCache::getAllIds()
+{
+  std::vector<std::string> ids;
+  for (auto const& obj : sRefMap)
+  {
+    ids.push_back(obj.first);
+  }
+  return ids;
+}
+
 rtError
 rtRemoteObjectCache::markUnevictable(std::string const& id, bool state)
 {
