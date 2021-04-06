@@ -1,3 +1,20 @@
+/**
+* Copyright 2021 Comcast Cable Communications Management, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+*/
 /*
 
 pxCore Copyright 2005-2018 John Robinson
@@ -29,6 +46,7 @@ limitations under the License.
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <rtLog.h>
 
@@ -556,7 +574,7 @@ rtGetDefaultInterface(sockaddr_storage& addr, uint16_t port)
 }
 
 rtError
-rtCreateUnixSocketName(pid_t pid, char* buff, int n)
+rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n)
 {
   if (!buff)
     return RT_ERROR_INVALID_ARG;
@@ -564,7 +582,18 @@ rtCreateUnixSocketName(pid_t pid, char* buff, int n)
   if (pid == 0)
     pid = getpid();
 
-  int count = snprintf(buff, n, "%s.%d", kUnixSocketTemplateRoot, pid);
+  std::string socketPath = env->Config->server_unix_socket_template();
+  char hostname[HOST_NAME_MAX];
+
+  // Add hostname so we only clean up our own sockets (for container support)
+  if (gethostname(hostname, HOST_NAME_MAX) != 0)
+  {
+    rtError e = rtErrorFromErrno(errno);
+    rtLogWarn("Failed to get hostname with error %s", rtStrError(e));
+    return e;
+  }
+
+  int count = snprintf(buff, n, "%s.%s.%d", socketPath.c_str(), hostname, pid);
   if (count >= n)
   {
     rtLogError("truncated socket path %d <= %d", n, count);

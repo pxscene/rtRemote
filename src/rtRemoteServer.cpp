@@ -1,3 +1,20 @@
+/**
+* Copyright 2021 Comcast Cable Communications Management, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+*/
 /*
 
 pxCore Copyright 2005-2018 John Robinson
@@ -44,6 +61,7 @@ limitations under the License.
 #include <fcntl.h>
 #include <rtLog.h>
 #include <dirent.h>
+#include <libgen.h>
 
 namespace
 {
@@ -78,8 +96,18 @@ namespace
     return pid;
   } // parsePid
 
+  bool isOurHostname(char const* hostname, char const* s)
+  {
+    std::string socketName = s;
+    std::size_t first = socketName.find_first_of(".") + 1;
+    std::size_t last = socketName.find_last_of(".");
+
+    std::string h = socketName.substr(first, last - first);
+    return !strcmp(h.c_str(), hostname);
+  } // isOurHostname
+
   void
-  cleanupStaleUnixSockets()
+  cleanupStaleUnixSockets(rtRemoteEnvironment* env)
   {
     DIR* d = opendir("/proc/");
     if (!d)
@@ -110,11 +138,23 @@ namespace
     while ((result != nullptr) && ret == 0);
     closedir(d);
 
-    d = opendir("/tmp");
+
+    std::string socketTemplate = env->Config->server_unix_socket_template();
+    std::string socketDir = dirname(strdup(socketTemplate.c_str()));
+
+    char hostname[HOST_NAME_MAX];
+    if (gethostname(hostname, HOST_NAME_MAX) != 0)
+    {
+      rtError e = rtErrorFromErrno(errno);
+      rtLogWarn("Failed to get hostname with error %s", rtStrError(e));
+      return;
+    }
+
+    d = opendir(socketDir.c_str());
     if (!d)
     {
       rtError e = rtErrorFromErrno(errno);
-      rtLogWarn("failed to open directory /tmp. %s", rtStrError(e));
+      rtLogWarn("failed to open directory %s. %s", socketDir.c_str(), rtStrError(e));
       return;
     }
 
@@ -125,10 +165,17 @@ namespace
       if (ret == 0 && (result != nullptr))
       {
         memset(path, 0, sizeof(path));
-        strcpy(path, "/tmp/");
+        strcpy(path, socketDir.c_str());
+        strcat(path, "/");
         strcat(path, result->d_name);
-        if (strncmp(path, kUnixSocketTemplateRoot, strlen(kUnixSocketTemplateRoot)) == 0)
+        if (strncmp(path, socketTemplate.c_str(), strlen(socketTemplate.c_str())) == 0)
         {
+          if (!isOurHostname(hostname, result->d_name))
+          {
+            // ignore this socket
+            continue;
+          }
+
           int pid = parsePid(result->d_name);
           if (active_pids.find(pid) == active_pids.end())
           {
@@ -229,7 +276,7 @@ rtRemoteServer::rtRemoteServer(rtRemoteEnvironment* env)
   m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeMethodCallRequest,
     rtRemoteCallback<rtRemoteMessageHandler>(&rtRemoteServer::onMethodCall_Dispatch, this)));
 
-  m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveRequest,
+  m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveRequest, 
     rtRemoteCallback<rtRemoteMessageHandler>(&rtRemoteServer::onKeepAlive_Dispatch, this)));
 
   m_command_handlers.insert(CommandHandlerMap::value_type(kMessageTypeKeepAliveResponse,
@@ -640,11 +687,11 @@ rtRemoteServer::openRpcListener()
   char path[UNIX_PATH_MAX];
 
   memset(path, 0, sizeof(path));
-  cleanupStaleUnixSockets();
+  cleanupStaleUnixSockets(m_env);
 
   if (isUnixDomain(m_env))
   {
-    rtError e = rtCreateUnixSocketName(0, path, sizeof(path));
+    rtError e = rtCreateUnixSocketName(m_env, 0, path, sizeof(path));
     if (e != RT_OK)
       return e;
 
