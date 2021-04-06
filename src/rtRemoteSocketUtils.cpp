@@ -15,7 +15,6 @@
 *
 * SPDX-License-Identifier: Apache-2.0
 */
-
 /*
 
 pxCore Copyright 2005-2018 John Robinson
@@ -47,6 +46,7 @@ limitations under the License.
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <rtLog.h>
 
@@ -614,7 +614,7 @@ rtGetDefaultInterface(sockaddr_storage& addr, uint16_t port)
 }
 
 rtError
-rtCreateUnixSocketName(pid_t pid, char* buff, int n)
+rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n)
 {
   if (!buff)
     return RT_ERROR_INVALID_ARG;
@@ -622,7 +622,18 @@ rtCreateUnixSocketName(pid_t pid, char* buff, int n)
   if (pid == 0)
     pid = getpid();
 
-  int count = snprintf(buff, n, "%s.%d", kUnixSocketTemplateRoot, pid);
+  std::string socketPath = env->Config->server_unix_socket_template();
+  char hostname[HOST_NAME_MAX];
+
+  // Add hostname so we only clean up our own sockets (for container support)
+  if (gethostname(hostname, HOST_NAME_MAX) != 0)
+  {
+    rtError e = rtErrorFromErrno(errno);
+    rtLogWarn("Failed to get hostname with error %s", rtStrError(e));
+    return e;
+  }
+
+  int count = snprintf(buff, n, "%s.%s.%d", socketPath.c_str(), hostname, pid);
   if (count >= n)
   {
     rtLogError("truncated socket path %d <= %d", n, count);

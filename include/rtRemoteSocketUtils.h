@@ -46,6 +46,7 @@ limitations under the License.
 #include <string>
 #include <vector>
 
+#include "rtRemoteEnvironment.h"
 #include "rtRemoteSocketBuffer.h"
 #include "rtRemoteMessage.h"
 
@@ -54,7 +55,6 @@ limitations under the License.
 #endif
 
 #define kInvalidSocket (-1)
-#define kUnixSocketTemplateRoot "/tmp/rt_remote_soc"
 
 rtError rtParseAddress(sockaddr_storage& ss, char const* addr, uint16_t port, uint32_t* index);
 rtError rtParseAddress(sockaddr_storage& ss, char const* s);
@@ -74,6 +74,6 @@ rtError rtGetPeerName(int fd, sockaddr_storage& endpoint);
 rtError rtGetSockName(int fd, sockaddr_storage& endpoint);
 rtError	rtCloseSocket(int& fd);
 rtError rtGetDefaultInterface(sockaddr_storage& addr, uint16_t port);
-rtError rtCreateUnixSocketName(pid_t pid, char* buff, int n);
+rtError rtCreateUnixSocketName(rtRemoteEnvironment* env, pid_t pid, char* buff, int n);
 
 #endif
