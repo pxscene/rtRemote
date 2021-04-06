@@ -1,3 +1,21 @@
+#
+# Copyright 2021 Comcast Cable Communications Management, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
 cmake_minimum_required(VERSION 2.8)
 project(rtremote)
 
@@ -20,13 +38,12 @@ set(RTREMOTE_SOURCE_FILES rtremote.conf.gen rtRemoteConfig.h src/rtRemoteServer.
         src/rtRemoteValueWriter.cpp src/rtRemoteSocketUtils.cpp src/rtRemoteStream.cpp
         src/rtRemoteObjectCache.cpp src/rtRemote.cpp src/rtRemoteConfig.cpp src/rtRemoteEndPoint.cpp src/rtRemoteFactory.cpp
         src/rtRemoteMulticastResolver.cpp rtRemoteConfigBuilder.cpp src/rtRemoteAsyncHandle.cpp
-        src/rtRemoteEnvironment.cpp src/rtRemoteStreamSelector.cpp src/rtGuid.cpp)
+        src/rtRemoteEnvironment.cpp src/rtRemoteStreamSelector.cpp src/rtGuid.cpp src/rtRemoteUnicastResolver.cpp)
 
 add_definitions(-DRAPIDJSON_HAS_STDSTRING -DRT_PLATFORM_LINUX -DRT_REMOTE_LOOPBACK_ONLY)
 include_directories(AFTER ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/external ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR} ${RT_INCLUDE_DIR} )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-
 set(LIBRARY_LINKER_OPTIONS -pthread -ldl -luuid -Wl,-rpath=../../,--enable-new-dtags)
 set(RTREMOTE_LINK_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR} ${RT_LIBRARY_DIR} )
 
@@ -57,10 +74,10 @@ add_custom_command(OUTPUT rtRemoteConfigBuilder.cpp
 if (ENABLE_RTREMOTE_DEBUG)
     message("Enabling rtRemote debug")
     add_definitions(-DRT_RPC_DEBUG -DRT_DEBUG)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fno-inline")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O0 -fno-inline")
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O2")
 endif (ENABLE_RTREMOTE_DEBUG)
 
 if (ENABLE_RTREMOTE_PROFILE)
@@ -113,3 +130,10 @@ if (BUILD_RTREMOTE_SAMPLE_APP_SIMPLE)
     target_link_libraries(rtremote_sample_app_server ${LIBRARY_LINKER_OPTIONS} -lrtCore rtremote_shared -luuid)
     target_compile_definitions(rtremote_sample_app_server PRIVATE RT_PLATFORM_LINUX RAPIDJSON_HAS_STDSTRING)
 endif (BUILD_RTREMOTE_SAMPLE_APP_SIMPLE)
+
+if (BUILD_RESOLVER)
+  add_executable(rtresolvd src/rtresolvd.cpp)
+  add_dependencies(rtresolvd rtremote_shared)
+  target_link_libraries(rtresolvd ${LIBRARY_LINKER_OPTIONS} rtremote_shared rtCore)
+  link_directories(${RTREMOTE_LINK_DIRECTORIES})
+endif ()

@@ -10,3 +10,5 @@ rtremote.conf.gen
 rpcSampleApp_s
 rtSampleClient
 rtSampleServer
+rtresolvd
+librtRemote.so
