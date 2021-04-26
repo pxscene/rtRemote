@@ -53,17 +53,23 @@ limitations under the License.
 #include <memory>
 #include <vector>
 
-static inline std::string& ltrim(std::string& s)
+std::string& ltrim(std::string& s)
 {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-    std::not1(std::ptr_fun<int, int>(std::isspace))));
+  int idx = 0;
+  while ((idx < s.size()) && isspace(s[idx]))
+    idx++;
+  if (idx <= s.size())
+    s = s.substr(idx);
   return s;
 }
 
-static inline std::string& rtrim(std::string& s)
+std::string& rtrim(std::string& s)
 {
-  s.erase(std::find_if(s.rbegin(), s.rend(),
-    std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+  int idx = s.size() - 1;
+  while ((idx < s.size()) && isspace(s[idx]))
+    idx--;
+  if (idx >= 0)
+    s = s.substr(0, idx + 1);
   return s;
 }
 
