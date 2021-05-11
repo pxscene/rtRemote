@@ -210,7 +210,12 @@ rtRemoteEnvironment::processSingleWorkItem(std::chrono::milliseconds timeout, bo
   {
     if (!m_running)
     {
-      rtLogError("processSingleWorkItem: env is not running. RT_FAIL");
+      static bool logged = false;
+      if (!logged)
+      {
+        logged = true;
+        rtLogError("processSingleWorkItem: env is not running. RT_FAIL");
+      }
       return RT_FAIL;
     }
 
