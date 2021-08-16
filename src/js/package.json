@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "ip": "^1.1.5",
-    "json-bigint": "^0.2.3",
+    "json-bigint": "^1.0.0",
     "uuid": "^3.2.1",
     "bignumber.js": "^4.1.0",
     "winston": "~2.4.0"
