@@ -197,7 +197,7 @@ rtRemoteValueReader::read(rtRemoteEnvironment* env, rtValue& to, rapidjson::Valu
 
     case RT_voidPtrType:
     {
-#if __x86_64
+#if __x86_64 || __aarch64__
       to.setVoidPtr((void *) val->value.GetUint64());
 #else
       to.setVoidPtr((void *) val->value.GetUint());
