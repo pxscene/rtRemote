@@ -52,6 +52,18 @@ namespace
   }
 
   void
+  addSessionId(rtRemoteMessagePtr& doc, rtRemoteEnvironment* env, rtValue const& value)
+  {
+    rapidjson::Value jsonValue;
+    rtError e = rtRemoteValueWriter::write(env, value, jsonValue, *doc);
+
+    // TODO: better error handling
+    if (e == RT_OK)
+      doc->AddMember(kFieldNameSession, jsonValue, doc->GetAllocator());
+  }
+
+
+  void
   addArgument(rtRemoteMessagePtr& doc, rtRemoteEnvironment* env, rtValue const& value)
   {
     rapidjson::Value jsonValue;
@@ -283,7 +295,7 @@ rtRemoteClient::sendKeepAlive()
 }
 
 rtError
-rtRemoteClient::sendSet(std::string const& objectId, char const* propertyName, rtValue const& value)
+rtRemoteClient::sendSet(std::string const& objectId, char const* propertyName, rtValue const& value, rtValue& session)
 {
   rtRemoteCorrelationKey k = rtMessage_GetNextCorrelationKey();
 
@@ -294,6 +306,10 @@ rtRemoteClient::sendSet(std::string const& objectId, char const* propertyName, r
   req->AddMember(kFieldNamePropertyName, std::string(propertyName), req->GetAllocator());
   req->AddMember(kFieldNameCorrelationKey, k.toString(), req->GetAllocator());
   addValue(req, m_env, value);
+
+  if(session.convert<uint32_t>()){
+    addSessionId(req, m_env, session);
+  }
 
   return sendSet(req, k);
 }
@@ -339,7 +355,7 @@ rtRemoteClient::sendSet(rtRemoteMessagePtr const& req, rtRemoteCorrelationKey k)
 }
 
 rtError
-rtRemoteClient::sendGet(std::string const& objectId, char const* propertyName, rtValue& result)
+rtRemoteClient::sendGet(std::string const& objectId, char const* propertyName, rtValue& result, rtValue& session)
 {
   rtRemoteCorrelationKey k = rtMessage_GetNextCorrelationKey();
 
@@ -349,6 +365,10 @@ rtRemoteClient::sendGet(std::string const& objectId, char const* propertyName, r
   req->AddMember(kFieldNameObjectId, objectId, req->GetAllocator());
   req->AddMember(kFieldNamePropertyName, std::string(propertyName), req->GetAllocator());
   req->AddMember(kFieldNameCorrelationKey, k.toString(), req->GetAllocator());
+
+  if(session.convert<uint32_t>()){
+    addSessionId(req, m_env, session);
+  }
 
   return sendGet(req, k, result);
 }
