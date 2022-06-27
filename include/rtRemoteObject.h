@@ -23,6 +23,8 @@ limitations under the License.
 #include <memory>
 #include <string>
 
+#define UNDEFINED_SESSION_ID 0
+
 class rtRemoteClient;
 
 class rtRemoteObject : public rtIObject
@@ -31,9 +33,9 @@ public:
   rtRemoteObject(std::string const& id, std::shared_ptr<rtRemoteClient> const& transport);
   virtual ~rtRemoteObject();
 
-  virtual rtError Get(char const* name, rtValue* value) const;
+  virtual rtError Get(char const* name, rtValue* value, rtValue* session=nullptr) const;
   virtual rtError Get(uint32_t index, rtValue* value) const;
-  virtual rtError Set(char const* name, rtValue const* value);
+  virtual rtError Set(char const* name, rtValue const* value, rtValue* session=nullptr);
   virtual rtError Set(uint32_t index, rtValue const* value);
 
   virtual unsigned long AddRef();

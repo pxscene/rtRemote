@@ -36,7 +36,7 @@ rtRemoteObject::~rtRemoteObject()
 }
 
 rtError
-rtRemoteObject::Get(char const* name, rtValue* value) const
+rtRemoteObject::Get(char const* name, rtValue* value, rtValue* session) const
 {
   if (value == nullptr)
     return RT_ERROR_INVALID_ARG;
@@ -44,7 +44,14 @@ rtRemoteObject::Get(char const* name, rtValue* value) const
   if (name == nullptr)
     return RT_ERROR_INVALID_ARG;
 
-  return m_client->sendGet(m_id, name, *value);
+  rtValue s;
+  if(session) {
+    s = *session;
+  }
+  else {
+    s = rtValue(UNDEFINED_SESSION_ID);
+  }
+  return m_client->sendGet(m_id, name, *value, s);
 }
 
 rtError
@@ -57,12 +64,19 @@ rtRemoteObject::Get(uint32_t index, rtValue* value) const
 }
 
 rtError
-rtRemoteObject::Set(char const* name, rtValue const* value)
+rtRemoteObject::Set(char const* name, rtValue const* value, rtValue* session)
 {
   if (value == nullptr)
     return RT_ERROR_INVALID_ARG;
 
-  return m_client->sendSet(m_id, name, *value);
+  rtValue s;
+  if(session) {
+    s = *session;
+  }
+  else {
+    s = rtValue(UNDEFINED_SESSION_ID);
+  }
+  return m_client->sendSet(m_id, name, *value, s);
 }
 
 rtError
