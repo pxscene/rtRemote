@@ -202,7 +202,7 @@ rtRemoteObjectCache::erase(std::string const& id)
 }
 
 rtError
-rtRemoteObjectCache::removeUnused()
+rtRemoteObjectCache::removeUnused(bool expireAll)
 {
   auto now = std::chrono::steady_clock::now();
 
@@ -213,7 +213,7 @@ rtRemoteObjectCache::removeUnused()
     //           std::chrono::duration_cast<std::chrono::seconds>(now - itr->second.LastUsed).count(),
     //           itr->second.MaxIdleTime.count(), itr->second.Unevictable);
     #if 0
-    if (!itr->second.Unevictable && itr->second.isActive(now))
+    if (!itr->second.Unevictable && (expireAll || itr->second.isActive(now)))
     {
       rtLogInfo("not removing:%s, should remove, but it's active",
         itr->first.c_str());
