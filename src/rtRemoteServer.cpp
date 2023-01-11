@@ -441,6 +441,15 @@ rtRemoteServer::onClientStateChanged(std::shared_ptr<rtRemoteClient> const& clie
         ditr->second.clear();
         m_disconnected_callback_map.erase(ditr);
     }
+
+    // also remove the disconnected client from m_object_map
+    for (auto itr = m_object_map.begin(); itr != m_object_map.end();)
+    {
+      if (itr->second.get() == client.get())
+        itr = m_object_map.erase(itr);
+      else
+        ++itr;
+    }
   }
 
   return e;
